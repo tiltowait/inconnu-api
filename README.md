@@ -1,4 +1,4 @@
-A simple REST API for [Inconnu](https://github.com/tiltowait/inconnu). Adapted from [the initial Python version](https://github.com/tiltowait/inconnu-api).
+A simple REST API for [Inconnu](https://github.com/tiltowait/inconnu). Adapted from [the initial Python version](https://github.com/tiltowait/inconnu-api-python).
 
 ## Endpoints
 
