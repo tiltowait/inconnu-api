@@ -22,7 +22,7 @@ var faceclaimBody = []byte(`{
 	"guild": 987654321,
 	"user": 123456789,
 	"charid": "__test",
-	"image_url": "https://pcs.inconnu.app/62242d51ae0016646378a6be/63ab89f23b77500001f0bb68.webp"
+	"image_url": "https://tilt-assets.s3-us-west-1.amazonaws.com/tiltowait.webp"
 }`)
 
 // Quiet logs and set the faceclaim bucket name
