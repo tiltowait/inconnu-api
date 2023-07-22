@@ -6,6 +6,13 @@ jobs:
       - image: google/cloud-sdk
     steps:
       - run:
+          name: Install Go
+          command: |
+            curl -OL https://golang.org/dl/go1.19.11.linux-amd64.tar.gz
+            sudo tar -C /usr/local -xvf go1.16.7.linux-amd64.tar.gz
+            export PATH=$PATH:/usr/local/go/bin
+            go version
+      - run:
           name: Authorize GCP
           command: |
             echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account --key-file=-
