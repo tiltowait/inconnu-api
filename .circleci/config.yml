@@ -3,8 +3,13 @@ jobs:
   build:
     working_directory: ~/repo
     docker:
-      - image: cimg/go:1.19
+      - image: google/cloud-sdk
     steps:
+      - run:
+          name: Authorize GCP
+          command: |
+            echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account --key-file=-
+            gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
       - checkout
       - restore_cache:
           keys:
