@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
-	"log"
+	// "io/ioutil"
+	// "log"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -27,7 +27,7 @@ var faceclaimBody = []byte(`{
 
 // Quiet logs and set the faceclaim bucket name
 func TestMain(m *testing.M) {
-	log.SetOutput(ioutil.Discard)
+	// log.SetOutput(ioutil.Discard)
 	FaceclaimBucket = "pcs.inconnu.app"
 	gin.SetMode(gin.TestMode)
 
