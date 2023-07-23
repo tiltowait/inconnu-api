@@ -33,9 +33,6 @@ jobs:
           paths:
             - "/go/pkg/mod"
       - run:
-          name: Get cwebp directory
-          command: echo `which cwebp`
-      - run:
           name: Run tests
           command: |
             go test -v
