@@ -244,13 +244,12 @@ func uploadObject(data io.Reader, bucket, object, contentType string, metadata .
 	// bucket := "bucket-name"
 	// object := "object-name"
 	ctx := context.Background()
-	fmt.Println("Got context")
 	client, err := storage.NewClient(ctx)
 	if err != nil {
+		fmt.Println("storage.NewClient:", err)
 		return fmt.Errorf("storage.NewClient: %v", err)
 	}
 	defer client.Close()
-	fmt.Println("Got client")
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second * 50)
 	defer cancel()
@@ -259,7 +258,6 @@ func uploadObject(data io.Reader, bucket, object, contentType string, metadata .
 	wc := client.Bucket(bucket).Object(object).NewWriter(ctx)
 	wc.ContentType = contentType
 	wc.ChunkSize = 0
-	fmt.Println("Got bucket")
 
 	if len(metadata) > 0 {
 		wc.Metadata = metadata[0]
@@ -268,11 +266,9 @@ func uploadObject(data io.Reader, bucket, object, contentType string, metadata .
 	if _, err = io.Copy(wc, data); err != nil {
 		return fmt.Errorf("io.Copy: %v", err)
 	}
-	fmt.Println("Copied file")
 	if err := wc.Close(); err != nil {
 		return fmt.Errorf("Writer.Close: %v", err)
 	}
-	fmt.Println("Closed file")
 
 	log.Printf("%v uploaded to %v\n", object, bucket)
 
