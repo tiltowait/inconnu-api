@@ -15,7 +15,8 @@ jobs:
             sudo apt-get update && sudo apt-get install -y google-cloud-cli
       - run:
           name: Install webp
-          command: sudo apt-get install -y webp
+          command: echo Skipped
+          # command: sudo apt-get install -y webp
       - run:
           name: Authorize GCP
           command: |
