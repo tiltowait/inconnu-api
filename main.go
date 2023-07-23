@@ -246,7 +246,6 @@ func uploadObject(data io.Reader, bucket, object, contentType string, metadata .
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		fmt.Println("storage.NewClient:", err)
 		return fmt.Errorf("storage.NewClient: %v", err)
 	}
 	defer client.Close()
