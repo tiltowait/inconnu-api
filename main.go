@@ -208,6 +208,7 @@ func processImage(request FaceclaimRequest) (string, error) {
 	defer resp.Body.Close()
 
 	log.Println("File downloaded; converting to WebP")
+	fmt.Println("About to convert image")
 
 	var buf bytes.Buffer
 	err = webpbin.NewCWebP().
@@ -218,6 +219,7 @@ func processImage(request FaceclaimRequest) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("webpbin: %v", err)
 	}
+	fmt.Println("Converted image")
 
 	log.Println("File converted!")
 
