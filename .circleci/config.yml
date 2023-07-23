@@ -25,7 +25,7 @@ jobs:
           name: Set up application default credentials
           command: |
             echo $GCLOUD_SERVICE_KEY > ~/default_credentials.json
-            export GOOGLE_APPLICATION_CREDENTIALS=~/default_credentials.json
+            echo 'export GOOGLE_APPLICATION_CREDENTIALS=~/default_credentials.json' >> $BASH_ENV
       - checkout
       - restore_cache:
           keys:
