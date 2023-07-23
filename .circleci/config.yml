@@ -14,6 +14,9 @@ jobs:
             curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
             sudo apt-get update && sudo apt-get install -y google-cloud-cli
       - run:
+          name: Install webp
+          command: sudo apt-get install -y webp
+      - run:
           name: Authorize GCP
           command: |
             echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account --key-file=-
@@ -32,5 +35,6 @@ jobs:
       - run:
           name: Run tests
           command: |
-            sudo apt-get install -y webp
+            which webp
+            which cwebp
             go test -v
