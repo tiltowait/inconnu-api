@@ -33,8 +33,9 @@ jobs:
           paths:
             - "/go/pkg/mod"
       - run:
+          name: Check if webp exists
+          command: which cwebp
+      - run:
           name: Run tests
           command: |
-            which webp
-            which cwebp
             go test -v
