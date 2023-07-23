@@ -227,7 +227,7 @@ func processImage(request FaceclaimRequest) (string, error) {
 	o := primitive.NewObjectID()
 	objectName := fmt.Sprintf("%v/%v.webp", request.CharID, o.Hex())
 
-	fmt.Println("objectName: %v", objectName)
+	fmt.Println("objectName:", objectName)
 
 	// Upload the file
 	metadata := map[string]string{
