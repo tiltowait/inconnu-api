@@ -208,7 +208,6 @@ func processImage(request FaceclaimRequest) (string, error) {
 	defer resp.Body.Close()
 
 	log.Println("File downloaded; converting to WebP")
-	fmt.Println("About to convert image")
 
 	var buf bytes.Buffer
 	err = webpbin.NewCWebP().
@@ -219,15 +218,11 @@ func processImage(request FaceclaimRequest) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("webpbin: %v", err)
 	}
-	fmt.Println("Converted image")
-
 	log.Println("File converted!")
 
 	// The objectName is <charid>/<ObjectId()>.webp
 	o := primitive.NewObjectID()
 	objectName := fmt.Sprintf("%v/%v.webp", request.CharID, o.Hex())
-
-	fmt.Println("objectName:", objectName)
 
 	// Upload the file
 	metadata := map[string]string{
@@ -236,11 +231,9 @@ func processImage(request FaceclaimRequest) (string, error) {
 		"original": request.ImageURL,
 		"charid":   request.CharID,
 	}
-	fmt.Println("Attempting to upload object")
 	if err = uploadObject(&buf, FaceclaimBucket, objectName, "image/webp", metadata); err != nil {
 		return "", fmt.Errorf("processImage: %v", err)
 	}
-	fmt.Println("Uploaded object")
 
 	// The object's URL is derived from the bucket name and key name
 	return fmt.Sprintf("https://%v/%v", FaceclaimBucket, objectName), nil
