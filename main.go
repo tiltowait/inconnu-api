@@ -34,6 +34,7 @@ type FaceclaimRequest struct {
 	User     int    `json:"user"`
 	CharID   string `json:"charid"`
 	ImageURL string `json:"image_url"`
+	Bucket 	 string	`json:"bucket"`
 }
 
 func main() {
@@ -220,6 +221,15 @@ func processImage(request FaceclaimRequest) (string, error) {
 	}
 	log.Println("File converted!")
 
+	// Determine the bucket to upload to
+	bucketName := request.Bucket
+	if bucketName == "" {
+		log.Println("Bucket not specified; using", FaceclaimBucket)
+		bucketName = FaceclaimBucket
+	} else {
+		log.Println("Using specified bucket", bucketName)
+	}
+
 	// The objectName is <charid>/<ObjectId()>.webp
 	o := primitive.NewObjectID()
 	objectName := fmt.Sprintf("%v/%v.webp", request.CharID, o.Hex())
@@ -231,12 +241,12 @@ func processImage(request FaceclaimRequest) (string, error) {
 		"original": request.ImageURL,
 		"charid":   request.CharID,
 	}
-	if err = uploadObject(&buf, FaceclaimBucket, objectName, "image/webp", metadata); err != nil {
+	if err = uploadObject(&buf, bucketName, objectName, "image/webp", metadata); err != nil {
 		return "", fmt.Errorf("processImage: %v", err)
 	}
 
 	// The object's URL is derived from the bucket name and key name
-	return fmt.Sprintf("https://%v/%v", FaceclaimBucket, objectName), nil
+	return fmt.Sprintf("https://%v/%v", bucketName, objectName), nil
 }
 
 // Adapted from https://cloud.google.com/storage/docs/uploading-objects-from-memory

@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,6 +24,13 @@ var faceclaimBody = []byte(`{
 	"user": 123456789,
 	"charid": "__test",
 	"image_url": "https://tilt-assets.s3-us-west-1.amazonaws.com/tiltowait.webp"
+}`)
+var altFaceclaimBody = []byte(`{
+	"guild": 987654321,
+	"user": 123456789,
+	"charid": "__test",
+	"image_url": "https://tilt-assets.s3-us-west-1.amazonaws.com/tiltowait.webp",
+	"bucket": "pcs.botch.lol"
 }`)
 
 // Quiet logs and set the faceclaim bucket name
@@ -83,6 +91,17 @@ func TestFaceclaimCorrectUpload(t *testing.T) {
 	// Check that the image exists at the URL
 	imgUrl := getStringBody(w.Body)
 	assert.True(t, urlExists(imgUrl), "The image URL does not exist")
+}
+
+func TestAlternateBucketUpload(t *testing.T) {
+	r := setupRouter(false)
+	w := performRequest(r, "POST", "/faceclaim/upload", bytes.NewBuffer(altFaceclaimBody))
+
+	assert.Equal(t, 201, w.Code)
+
+	imgUrl := getStringBody(w.Body)
+	assert.True(t, urlExists(imgUrl), "The image URL does not exist")
+	assert.True(t, strings.HasPrefix(imgUrl, "https://pcs.botch.lol"))
 }
 
 func TestSingleDelete(t *testing.T) {
@@ -206,6 +225,9 @@ func getObjectFromUrl(url string) string {
 }
 
 func urlExists(url string) bool {
-	r, _ := http.Head(url)
+	r, err := http.Head(url)
+	if err != nil {
+		return false
+	}
 	return r.StatusCode == 200
 }
