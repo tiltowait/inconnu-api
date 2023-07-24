@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -19,19 +20,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var faceclaimBody = []byte(`{
-	"guild": 987654321,
-	"user": 123456789,
-	"charid": "__test",
-	"image_url": "https://tilt-assets.s3-us-west-1.amazonaws.com/tiltowait.webp"
-}`)
-var altFaceclaimBody = []byte(`{
-	"guild": 987654321,
-	"user": 123456789,
-	"charid": "__test",
-	"image_url": "https://tilt-assets.s3-us-west-1.amazonaws.com/tiltowait.webp",
-	"bucket": "pcs.botch.lol"
-}`)
+var buckets = [2]string{"pcs.inconnu.app","pcs.botch.lol"}
+
+// Create a faceclaim upload request for a given bucket
+func createFaceclaimRequest(bucket string) *FaceclaimRequest {
+	return &FaceclaimRequest{
+		Guild: 0,
+		User: 0,
+		CharID: "__test",
+		ImageURL: "https://tilt-assets.s3-us-west-1.amazonaws.com/tiltowait.webp",
+		Bucket: bucket,
+	}
+}
 
 // Quiet logs and set the faceclaim bucket name
 func TestMain(m *testing.M) {
@@ -84,96 +84,99 @@ func TestFaceclaimEmptyUpload(t *testing.T) {
 
 func TestFaceclaimCorrectUpload(t *testing.T) {
 	r := setupRouter(false)
-	w := performRequest(r, "POST", "/faceclaim/upload", bytes.NewBuffer(faceclaimBody))
 
-	assert.Equal(t, 201, w.Code)
+	for _, bucket := range buckets {
+		request, _ := json.Marshal(createFaceclaimRequest(bucket))
+		w := performRequest(r, "POST", "/faceclaim/upload", bytes.NewBuffer(request))
 
-	// Check that the image exists at the URL
-	imgUrl := getStringBody(w.Body)
-	assert.True(t, urlExists(imgUrl), "The image URL does not exist")
-}
+		assert.Equal(t, 201, w.Code)
 
-func TestAlternateBucketUpload(t *testing.T) {
-	r := setupRouter(false)
-	w := performRequest(r, "POST", "/faceclaim/upload", bytes.NewBuffer(altFaceclaimBody))
-
-	assert.Equal(t, 201, w.Code)
-
-	imgUrl := getStringBody(w.Body)
-	assert.True(t, urlExists(imgUrl), "The image URL does not exist")
-	assert.True(t, strings.HasPrefix(imgUrl, "https://pcs.botch.lol"))
+		// Check that the image exists at the URL
+		imgUrl := getStringBody(w.Body)
+		assert.True(t, urlExists(imgUrl), fmt.Sprintf("%v does not exist", imgUrl))
+		assert.True(t, strings.HasPrefix(imgUrl, fmt.Sprintf("https://%v", bucket)))
+	}
 }
 
 func TestSingleDelete(t *testing.T) {
 	r := setupRouter(false)
 
-	// Process a new faceclaim
-	w := performRequest(r, "POST", "/faceclaim/upload", bytes.NewBuffer(faceclaimBody))
+	for _, bucket := range buckets {
+		// Process a new faceclaim
+		request, _ := json.Marshal(createFaceclaimRequest(bucket))
+		w := performRequest(r, "POST", "/faceclaim/upload", bytes.NewBuffer(request))
 
-	assert.Equal(t, 201, w.Code)
+		assert.Equal(t, 201, w.Code)
 
-	// Make sure the image was, in fact, created
-	imgUrl := getStringBody(w.Body)
-	assert.True(t, urlExists(imgUrl), "The image URL does not exist")
+		// Make sure the image was, in fact, created
+		imgUrl := getStringBody(w.Body)
+		assert.True(t, urlExists(imgUrl), fmt.Sprintf("%v does not exist", imgUrl))
+		assert.True(t, strings.HasPrefix(imgUrl, fmt.Sprintf("https://%v", bucket)))
 
-	// Now delete the faceclaim
-	path := "/faceclaim/delete/" + getObjectFromUrl(imgUrl)
-	w = performRequest(r, "DELETE", path, nil)
-	assert.Equal(t, 200, w.Code)
+		// Now delete the faceclaim
+		path := fmt.Sprintf("/faceclaim/delete/%v/%v", bucket, getObjectFromUrl(imgUrl))
+		w = performRequest(r, "DELETE", path, nil)
+		assert.Equal(t, 200, w.Code)
 
-	successful := false
-	for i := 0; i < 60; i++ {
-		if urlExists(imgUrl) {
-			successful = true
-			break
+		successful := false
+		for i := 0; i < 60; i++ {
+			if urlExists(imgUrl) {
+				successful = true
+				break
+			}
+			time.Sleep(1 * time.Second)
 		}
-		time.Sleep(1 * time.Second)
+		assert.True(t, successful, "Image was not deleted after 60 seconds")
 	}
-	assert.True(t, successful, "Image was not deleted after 60 seconds")
 }
 
 func TestMultiDelete(t *testing.T) {
-	// We need the CharID from the sample request
-	var faceclaimRequest FaceclaimRequest
-	json.Unmarshal(faceclaimBody, &faceclaimRequest)
-
 	r := setupRouter(false)
 
-	// Upload three images
-	imgUrls := make([]string, 3)
-	for i := 0; i < 3; i++ {
-		w := performRequest(r, "POST", "/faceclaim/upload", bytes.NewBuffer(faceclaimBody))
-		assert.Equal(t, 201, w.Code)
-		url := getStringBody(w.Body)
-		assert.True(t, urlExists(url), "The image was not uploaded")
-		imgUrls[i] = url
-	}
+	for _, bucket := range buckets {
+		// Shared request will result in different ObjectIds from being created
+		faceclaimRequest := createFaceclaimRequest(bucket)
+		request, _ := json.Marshal(faceclaimRequest)
 
-	// Delete the entire Faceclaim group
-	path := "/faceclaim/delete/" + faceclaimRequest.CharID + "/all"
-	w := performRequest(r, "DELETE", path, nil)
-	assert.Equal(t, 200, w.Code)
+		// Upload three images
+		imgUrls := make([]string, 3)
+		for i := 0; i < 3; i++ {
+			w := performRequest(r, "POST", "/faceclaim/upload", bytes.NewBuffer(request))
 
-	// Ensure the URLs were all deleted
-	numDeleted := 0
-	successful := false
-	for n := 0; n < 60; n++ {
-		numDeleted = 0
-		for _, u := range imgUrls {
-			if !urlExists(u) {
-				numDeleted += 1
-			} else {
-				// No point in checking the other URLs if one still exists
+			// Make sure the images were created successfully
+			assert.Equal(t, 201, w.Code)
+			url := getStringBody(w.Body)
+			assert.True(t, urlExists(url), "The image was not uploaded")
+			assert.True(t, strings.HasPrefix(url, fmt.Sprintf("https://%v", bucket)))
+			imgUrls[i] = url
+		}
+
+		// Delete the entire Faceclaim group
+		path := fmt.Sprintf("/faceclaim/delete/%v/%v/all", bucket, faceclaimRequest.CharID)
+		w := performRequest(r, "DELETE", path, nil)
+		assert.Equal(t, 200, w.Code)
+
+		// Ensure the URLs were all deleted
+		numDeleted := 0
+		successful := false
+		for n := 0; n < 60; n++ {
+			numDeleted = 0
+			for _, u := range imgUrls {
+				if !urlExists(u) {
+					numDeleted += 1
+				} else {
+					// No point in checking the other URLs if one still exists
+					break
+				}
+			}
+			if numDeleted == len(imgUrls) {
+				successful = true
 				break
 			}
+			time.Sleep(1 * time.Second)
 		}
-		if numDeleted == len(imgUrls) {
-			successful = true
-			break
-		}
-		time.Sleep(1 * time.Second)
+		assert.True(t, successful, "The faceclaim images were not deleted after 60s")
 	}
-	assert.True(t, successful, "The faceclaim images were not deleted after 60s")
 }
 
 func TestLogUpload(t *testing.T) {
