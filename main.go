@@ -84,8 +84,8 @@ func setupRouter(showLogs bool) *gin.Engine {
 	r.Use(VerifyAuth())
 
 	r.POST("/faceclaim/upload", processFaceclaim)
-	r.DELETE("/faceclaim/delete/:charid/all", deleteCharacterFaceclaims)
-	r.DELETE("/faceclaim/delete/:charid/:key", deleteSingleFaceclaim)
+	r.DELETE("/faceclaim/delete/:bucket/:charid/all", deleteCharacterFaceclaims)
+	r.DELETE("/faceclaim/delete/:bucket/:charid/:key", deleteSingleFaceclaim)
 	r.POST("/log/upload", uploadLog)
 
 	return r
@@ -126,8 +126,9 @@ func processFaceclaim(c *gin.Context) {
 // response of this function, as the user doesn't need to see the deletions
 // happen in real time.
 func deleteCharacterFaceclaims(c *gin.Context) {
+	bucket := c.Param("bucket")
 	charid := c.Param("charid")
-	if err := publishMessage("delete-faceclaim-group", JSON{"charid": charid}); err != nil {
+	if err := publishMessage("delete-faceclaim-group", JSON{"bucket": bucket, "charid": charid}); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -140,11 +141,12 @@ func deleteCharacterFaceclaims(c *gin.Context) {
 // of a character's faceclaim images using the same mechanism, which is much
 // more responsive for the user.
 func deleteSingleFaceclaim(c *gin.Context) {
+	bucket := c.Param("bucket")
 	charid := c.Param("charid")
 	key := c.Param("key")
 	object := fmt.Sprintf("%v/%v", charid, key)
 
-	if err := publishMessage("delete-single-faceclaim", JSON{"key": object}); err != nil {
+	if err := publishMessage("delete-single-faceclaim", JSON{"key": object, "bucket": bucket}); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
