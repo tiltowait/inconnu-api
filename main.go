@@ -218,7 +218,6 @@ func processImage(request FaceclaimRequest) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("webpbin: %v", err)
 	}
-
 	log.Println("File converted!")
 
 	// The objectName is <charid>/<ObjectId()>.webp
